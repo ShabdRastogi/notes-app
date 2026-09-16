@@ -50,9 +50,10 @@ def login_view(request):
 
 @login_required
 def logout_view(request):
-  logout(request)
-  return redirect('login')
-
+    if request.method == 'POST':
+        logout(request)
+        return redirect('login')
+    return render(request,'logout.html')
 @login_required
 def notes_view(request):
   notes=Notes.objects.filter(user=request.user)
@@ -68,3 +69,22 @@ def create_note(request):
     return redirect('notes')
   return render(request,'create_note.html')
 
+@login_required
+def edit_note(request,id):
+  note=Notes.objects.get(id=id,user=request.user)
+  if request.method == 'POST':
+    note.title=request.POST['title']
+    note.description=request.POST['description']
+    note.save()
+    return redirect('notes')
+  return render(request,'edit_note.html',{'note':note})
+
+
+@login_required
+def delete_note(request,id):
+  note=Notes.objects.get(id=id,user=request.user)
+  if request.method == 'POST':
+    note.delete()
+    return redirect('notes')
+
+  return render(request,'delete_note.html',{'note':note})

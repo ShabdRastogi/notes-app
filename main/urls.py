@@ -8,4 +8,6 @@ urlpatterns =[
   path("notes/",views.notes_view,name='notes'),
   path("notes/create/",views.create_note,name='create_note'),
   path('logout/',views.logout_view,name='logout'),
+  path("notes/<int:id>/edit/",views.edit_note,name='edit_note'),
+  path("notes/<int:id>/delete/",views.delete_note,name='delete_note'),
 ]
