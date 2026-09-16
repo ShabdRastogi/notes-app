@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth import login,authenticate,logout
 from django.contrib.auth.decorators import login_required
 from .models import Notes
+import re
 
 def main(request):
     if not request.user.is_authenticated:
@@ -14,6 +15,18 @@ def register_view(request):
     username = request.POST['username']
     password = request.POST['password']
     confirm_password = request.POST['confirm_password']
+
+    username_pattern = r'^[a-zA-Z0-9]+$'
+    if not re.match(username_pattern,username):
+      return render(request,'register.html',{
+        'error':'Username can only contain letters and numbers'
+      })
+
+    password_pattern = r'^(?=.*[A-Z])(?=.*[@$!%*?&]).{8,}$'
+    if not re.match(password_pattern,password):
+      return render(request,'register.html',{
+        "error":'Password must have 8+ characters, one uppercase letter, and one special symbol.'
+      })
     if password != confirm_password:
       return render(
         request,
