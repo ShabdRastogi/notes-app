@@ -6,6 +6,20 @@
   <title>Document</title>
 </head>
 <body>
-  <h1>hello there</h1>
+  <h1>My Notes</h1>
+  <p>Welcome, {{ request.user.username }}</p>
+  <a href="{% url 'create_note' %}">Create Note</a>
+  <hr>
+  {% if notes %}
+    {% for note in notes %}
+      <div>
+        <h2>{{ note.title }}</h2>
+        <p>{{ note.description }}</p>
+      </div>
+      <hr>
+    {% endfor %}
+  {% else %}
+    <p>You don't have any notes yet.</p>
+  {% endif %}
 </body>
 </html>
