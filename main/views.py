@@ -23,7 +23,7 @@ def register_view(request):
         'error':'Username can only contain letters and numbers'
       })
 
-    password_pattern = r'^(?=.*[A-Z])(?=.*[@$!%*?&]).{8,}$'
+    password_pattern = r'^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[@$!%*?&])[A-Za-z0-9@$!%*?&]{8,}$'
     if not re.match(password_pattern,password):
       return render(request,'register.html',{
         "error":'Password must have 8+ characters, one uppercase letter, and one special symbol.'

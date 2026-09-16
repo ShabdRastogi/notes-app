@@ -17,6 +17,16 @@
     button:hover{background:#4338ca}
     .login{text-align:center;margin:20px 0 0;color:#6b7280}
     .login a{color:#4f46e5;text-decoration:none;font-weight:600}
+    #password-requirements{
+        list-style:none;
+        padding:0;
+        margin:-5px 0 14px;
+        font-size:13px;
+        color:#6b7280;
+    }
+    #password-requirements li{
+        margin:4px 0;
+    }
   </style>
 </head>
 <body>
@@ -29,7 +39,14 @@
       {% csrf_token %}
 
       <input type="text" name="username" placeholder="Username" required>
-      <input type="password" name="password" placeholder="Password" required>
+      <input id="password" type="password" name="password" placeholder="Password" required>
+      <ul id="password-requirements">
+          <li id="length">❌ At least 8 characters</li>
+          <li id="uppercase">❌ At least one uppercase letter</li>
+          <li id="lowercase">❌ At least one lowercase letter</li>
+          <li id="number">❌ At least one number</li>
+          <li id="special">❌ At least one special character (@$!%*?&)</li>
+      </ul>
       <input type="password" name="confirm_password" placeholder="Confirm Password" required>
 
       {% if error %}
@@ -44,5 +61,21 @@
       <a href="{% url 'login' %}">Login</a>
     </p>
   </div>
+  <script>
+    const password = document.getElementById('password');
+    password.addEventListener('input', function() {
+        const value = password.value;
+        document.getElementById('length').textContent =
+            (value.length >= 8 ? '✅' : '❌') + ' At least 8 characters';
+        document.getElementById('uppercase').textContent =
+            (/[A-Z]/.test(value) ? '✅' : '❌') + ' At least one uppercase letter';
+        document.getElementById('lowercase').textContent =
+            (/[a-z]/.test(value) ? '✅' : '❌') + ' At least one lowercase letter';
+        document.getElementById('number').textContent =
+            (/[0-9]/.test(value) ? '✅' : '❌') + ' At least one number';
+        document.getElementById('special').textContent =
+            (/[@$!%*?&]/.test(value) ? '✅' : '❌') + ' At least one special character (@$!%*?&)';
+    });
+  </script>
 </body>
 </html>
