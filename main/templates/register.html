@@ -3,22 +3,46 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Document</title>
+  <title>Register</title>
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Arial,sans-serif;background:#f4f7fb;color:#1f2937;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+    .card{width:100%;max-width:420px;background:white;padding:35px;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.08)}
+    .logo{text-align:center;font-size:38px;margin-bottom:8px}
+    h1{text-align:center;margin:0 0 25px;font-size:28px}
+    input{width:100%;padding:13px;margin-bottom:14px;border:1px solid #d1d5db;border-radius:9px;font-size:15px;outline:none}
+    input:focus{border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.1)}
+    .error{background:#fee2e2;color:#b91c1c;padding:11px;border-radius:8px;margin:2px 0 16px;font-size:14px}
+    button{width:100%;margin-top:5px;padding:13px;border:0;border-radius:9px;background:#4f46e5;color:white;font-size:15px;font-weight:600;cursor:pointer}
+    button:hover{background:#4338ca}
+    .login{text-align:center;margin:20px 0 0;color:#6b7280}
+    .login a{color:#4f46e5;text-decoration:none;font-weight:600}
+  </style>
 </head>
 <body>
-  <form method="POST">
-    {% csrf_token %}
-    <input type="text" name="username" placeholder="Username" required>
-    <input type="password" name="password" placeholder="Password" required>
-    <input type="password" name="confirm_password" placeholder="Confirm Password" required>
-    {% if error %}
-      <p>{{ error }}</p>
-    {% endif %}
-    <button type="submit">Register</button>
-  </form>
-  <p>
-    Already have an account?
-    <a href="{% url 'login' %}">Login</a>
-  </p>
+  <div class="card">
+    <div class="logo">📝</div>
+
+    <h1>Create Account</h1>
+
+    <form method="POST">
+      {% csrf_token %}
+
+      <input type="text" name="username" placeholder="Username" required>
+      <input type="password" name="password" placeholder="Password" required>
+      <input type="password" name="confirm_password" placeholder="Confirm Password" required>
+
+      {% if error %}
+        <p class="error">{{ error }}</p>
+      {% endif %}
+
+      <button type="submit">Register</button>
+    </form>
+
+    <p class="login">
+      Already have an account?
+      <a href="{% url 'login' %}">Login</a>
+    </p>
+  </div>
 </body>
 </html>

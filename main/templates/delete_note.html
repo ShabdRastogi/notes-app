@@ -1,18 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Delete Note</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Delete Note</title>
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Arial,sans-serif;background:#f4f7fb;color:#1f2937;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+    .card{width:100%;max-width:450px;background:white;padding:35px;text-align:center;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.08)}
+    .icon{font-size:42px;margin-bottom:10px}
+    h1{margin:0 0 12px}
+    p{color:#6b7280;line-height:1.6;margin-bottom:25px}
+    .delete{width:100%;padding:13px;border:0;border-radius:9px;background:#dc2626;color:white;font-size:15px;font-weight:600;cursor:pointer}
+    .delete:hover{background:#b91c1c}
+    .cancel{display:block;margin-top:16px;color:#4f46e5;text-decoration:none}
+    .cancel:hover{text-decoration:underline}
+  </style>
 </head>
 <body>
-  <h1>Delete Note</h1>
-  <p>Are you sure you want to delete "{{ note.title }}"?</p>
-  <form method="POST">
-    {% csrf_token %}
-    <button type="submit">Yes, Delete</button>
-  </form>
-  <br>
-  <a href="{% url 'notes' %}">Cancel</a>
+  <div class="card">
+    <div class="icon">⚠️</div>
+
+    <h1>Delete Note?</h1>
+
+    <p>Are you sure you want to delete "<strong>{{ note.title }}</strong>"?</p>
+
+    <form method="POST">
+      {% csrf_token %}
+      <button class="delete" type="submit">Yes, Delete</button>
+    </form>
+
+    <a class="cancel" href="{% url 'notes' %}">Cancel</a>
+  </div>
 </body>
 </html>

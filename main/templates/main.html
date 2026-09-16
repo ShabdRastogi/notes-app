@@ -3,26 +3,83 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Document</title>
+  <title>My Notes</title>
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Arial,sans-serif;background:#f4f7fb;color:#1f2937}
+    .navbar{background:white;border-bottom:1px solid #e5e7eb;padding:18px 7%;display:flex;align-items:center;justify-content:space-between}
+    .brand{font-size:22px;font-weight:700}
+    .logout{color:#dc2626;text-decoration:none;font-weight:600}
+    .container{max-width:1000px;margin:45px auto;padding:0 20px}
+    .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px}
+    h1{margin:0;font-size:32px}
+    .welcome{color:#6b7280;margin:7px 0 0}
+    .create{display:inline-block;background:#4f46e5;color:white;padding:12px 18px;border-radius:9px;text-decoration:none;font-weight:600}
+    .create:hover{background:#4338ca}
+    .notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:18px}
+    .note{background:white;padding:22px;border-radius:14px;box-shadow:0 5px 18px rgba(0,0,0,.06);border:1px solid #eef0f4}
+    .note h2{margin:0 0 10px;font-size:20px;word-break:break-word}
+    .note p{color:#6b7280;line-height:1.6;white-space:pre-wrap;word-break:break-word;min-height:55px}
+    .actions{display:flex;gap:10px;margin-top:18px}
+    .edit,.delete{padding:9px 14px;border-radius:7px;text-decoration:none;font-size:14px;font-weight:600}
+    .edit{background:#eef2ff;color:#4f46e5}
+    .delete{background:#fee2e2;color:#dc2626}
+    .empty{background:white;text-align:center;padding:50px;border-radius:14px;color:#6b7280}
+    .empty p{margin-bottom:20px}
+    @media(max-width:600px){
+      .top{align-items:flex-start;gap:15px;flex-direction:column}
+      .navbar{padding:18px 5%}
+    }
+  </style>
 </head>
 <body>
-  <h1>My Notes</h1>
-  <p>Welcome, {{ request.user.username }}</p>
-  <a href="{% url 'create_note' %}">Create Note</a>
-  <hr>
-  {% if notes %}
-    {% for note in notes %}
+
+  <nav class="navbar">
+    <div class="brand">📝 My Notes</div>
+    <a class="logout" href="{% url 'logout' %}">Logout</a>
+  </nav>
+
+  <main class="container">
+
+    <div class="top">
       <div>
-        <h2>{{ note.title }}</h2>
-        <p>{{ note.description }}</p>
-        <a href="{% url 'edit_note' note.id %}">Edit</a>
-        <a href="{% url 'delete_note' note.id %}">Delete</a>
+        <h1>My Notes</h1>
+        <p class="welcome">Welcome, {{ request.user.username }}</p>
       </div>
-      <hr>
-    {% endfor %}
-  {% else %}
-    <p>You don't have any notes yet.</p>
-  {% endif %}
-  <a href="{% url 'logout' %}">Logout</a>
+
+      <a class="create" href="{% url 'create_note' %}">+ Create Note</a>
+    </div>
+
+    {% if notes %}
+
+      <div class="notes">
+        {% for note in notes %}
+
+          <div class="note">
+            <h2>{{ note.title }}</h2>
+
+            <p>{{ note.description }}</p>
+
+            <div class="actions">
+              <a class="edit" href="{% url 'edit_note' note.id %}">Edit</a>
+              <a class="delete" href="{% url 'delete_note' note.id %}">Delete</a>
+            </div>
+          </div>
+
+        {% endfor %}
+      </div>
+
+    {% else %}
+
+      <div class="empty">
+        <h2>No notes yet</h2>
+        <p>Create your first note to get started.</p>
+        <a class="create" href="{% url 'create_note' %}">+ Create Note</a>
+      </div>
+
+    {% endif %}
+
+  </main>
+
 </body>
 </html>
