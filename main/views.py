@@ -4,10 +4,11 @@ from django.contrib.auth import login,authenticate,logout
 from django.contrib.auth.decorators import login_required
 from .models import Notes
 
-@login_required
 def main(request):
-    notes = Notes.objects.filter(user=request.user)
-    return render(request,'main.html',{'notes':notes})
+    if not request.user.is_authenticated:
+      return redirect('login')
+    return render(request,'main.html')
+
 def register_view(request):
   if request.method == 'POST':
     username = request.POST['username']
