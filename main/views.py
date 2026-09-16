@@ -1,12 +1,13 @@
 from django.shortcuts import render,HttpResponse,redirect
 from django.contrib.auth.models import User
-from django.contrib.auth import login,authenticate
+from django.contrib.auth import login,authenticate,logout
 from django.contrib.auth.decorators import login_required
 from .models import Notes
 
 def main(request):
-  return render(request,'main.html') 
-
+    if not request.user.is_authenticated:
+        return redirect('login')
+    return render(request,'main.html')
 def register_view(request):
   if request.method == 'POST':
     username = request.POST['username']
@@ -47,6 +48,10 @@ def login_view(request):
     
   return render(request,'login.html')
 
+@login_required
+def logout_view(request):
+  logout(request)
+  return redirect('login')
 
 @login_required
 def notes_view(request):
