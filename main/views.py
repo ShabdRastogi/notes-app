@@ -1,7 +1,6 @@
 from django.shortcuts import render,HttpResponse,redirect
 from django.contrib.auth.models import User
-from . forms import RegisterForm
-from django.contrib.auth import login
+from django.contrib.auth import login,authenticate
 
 def main(request):
   return render(request,'main.html') 
@@ -29,10 +28,18 @@ def register_view(request):
       password=password
     )
 
-    login(request,user)
-    return redirect('main')
+    return redirect('login')
 
   return render(request,'register.html')
 
 def login_view(request):
-  return render(request,'login.html')
+  if request.method=='POST':
+    username=request.POST['username']
+    password=request.POST['password']
+
+    user = authenticate(request,username=username,password=password)
+    if user is not None:
+      login(request,user)
+      return redirect('main')
+    
+  return render(request,'login.html',{'error': 'Invalid username or password'})
