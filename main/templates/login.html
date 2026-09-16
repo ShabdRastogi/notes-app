@@ -47,6 +47,29 @@
             opacity:0;
         }
     }
+    .password-field{
+        position:relative;
+    }
+
+    .password-field input{
+        padding-right:60px;
+    }
+
+    .password-field button{
+        position:absolute;
+        right:8px;
+        top:7px;
+        width:auto;
+        margin:0;
+        padding:6px 8px;
+        background:none;
+        color:#4f46e5;
+        font-size:13px;
+    }
+
+    .password-field button:hover{
+        background:none;
+    }
   </style>
 </head>
 <body>
@@ -69,7 +92,10 @@
       <input type="text" id="username" name="username" required>
 
       <label for="password">Password</label>
-      <input type="password" id="password" name="password" required>
+      <div class="password-field">
+        <input type="password" id="password" name="password" required>
+        <button type="button" onclick="togglePassword()">Show</button>
+      </div>
 
       {% if error %}
         <p class="error">{{ error }}</p>
@@ -83,5 +109,19 @@
       <a href="{% url 'register' %}">Register</a>
     </p>
   </div>
+  <script>
+    function togglePassword(){
+        const password=document.getElementById('password');
+        const button=document.querySelector('.password-field button');
+
+        if(password.type==="password"){
+            password.type="text";
+            button.textContent="Hide";
+        }else{
+            password.type="password";
+            button.textContent="Show";
+        }
+    }
+  </script>
 </body>
 </html>
