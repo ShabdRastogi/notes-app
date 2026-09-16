@@ -30,10 +30,45 @@
       .top{align-items:flex-start;gap:15px;flex-direction:column}
       .navbar{padding:18px 5%}
     }
+    .toast{
+        position:fixed;
+        top:20px;
+        right:20px;
+        padding:15px 20px;
+        background:#4CAF50;
+        color:white;
+        border-radius:8px;
+        box-shadow:0 4px 12px rgba(0,0,0,0.2);
+        animation:slideIn 0.4s ease,fadeOut 0.4s ease 3s forwards;
+    }
+
+    @keyframes slideIn{
+        from{
+            right:-300px;
+        }
+        to{
+            right:20px;
+        }
+    }
+
+    @keyframes fadeOut{
+        from{
+            opacity:1;
+        }
+        to{
+            opacity:0;
+        }
+    }
   </style>
 </head>
 <body>
-
+  {% if messages %}
+    {% for message in messages %}
+        <div class="toast">
+            ✓ {{ message }}
+        </div>
+    {% endfor %}
+  {% endif %}
   <nav class="navbar">
     <div class="brand">📝 My Notes</div>
     <a class="logout" href="{% url 'logout' %}">Logout</a>

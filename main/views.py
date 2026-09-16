@@ -4,6 +4,7 @@ from django.contrib.auth import login,authenticate,logout
 from django.contrib.auth.decorators import login_required
 from .models import Notes
 import re
+from django.contrib import messages
 
 def main(request):
     if not request.user.is_authenticated:
@@ -45,6 +46,8 @@ def register_view(request):
       password=password
     )
 
+    messages.success(request,'Registration successful!')
+
     return redirect('login')
 
   return render(request,'register.html')
@@ -57,6 +60,7 @@ def login_view(request):
     user = authenticate(request,username=username,password=password)
     if user is not None:
       login(request,user)
+      messages.success(request,'Login successful!')
       return redirect('main')
     return render(request,'login.html',{'error': 'Invalid username or password'}) 
     
