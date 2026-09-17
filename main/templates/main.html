@@ -59,6 +59,14 @@
             opacity:0;
         }
     }
+    .note-image{
+        width:100%;
+        max-height:200px;
+        object-fit:contain;
+        border-radius:10px;
+        margin-top:10px;
+        display:block;
+    }
   </style>
 </head>
 <body>
@@ -94,6 +102,9 @@
             <h2>{{ note.title }}</h2>
 
             <p>{{ note.description }}</p>
+            {% if note.image %}
+              <img class="note-image" src="{{ note.image.url }}" alt="{{ note.title }}">
+            {% endif %}
 
             <div class="actions">
               <a class="edit" href="{% url 'edit_note' note.id %}">Edit</a>

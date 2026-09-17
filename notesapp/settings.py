@@ -12,19 +12,21 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 
 from pathlib import Path
 import dj_database_url
+import os
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
+load_dotenv(BASE_DIR / ".env")
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-=@sp9q44mdk(j^sz9s%pfu$42zqv%nt&5@$xgez_$khxm+u3o5'
+SECRET_KEY=os.environ.get("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG=os.environ.get("DEBUG","False")=="True"
 
 ALLOWED_HOSTS = ["*"]
 
@@ -39,6 +41,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     'main',
+    "storages",
 ]
 
 MIDDLEWARE = [
@@ -82,6 +85,28 @@ DATABASES = {
     }
 }
 
+AWS_ACCESS_KEY_ID=os.environ.get("AWS_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY=os.environ.get("AWS_SECRET_ACCESS_KEY")
+
+AWS_STORAGE_BUCKET_NAME="shabd-notes-images"
+AWS_S3_REGION_NAME="ap-south-1"
+
+AWS_S3_SIGNATURE_VERSION="s3v4"
+AWS_QUERYSTRING_AUTH=True
+AWS_QUERYSTRING_EXPIRE=3600
+AWS_S3_ADDRESSING_STYLE="virtual"
+
+AWS_S3_FILE_OVERWRITE=False
+AWS_DEFAULT_ACL=None
+
+STORAGES={
+    "default":{
+        "BACKEND":"storages.backends.s3.S3Storage",
+    },
+    "staticfiles":{
+        "BACKEND":"django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/6.1/ref/settings/#auth-password-validators

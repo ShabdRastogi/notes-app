@@ -82,7 +82,8 @@ def create_note(request):
   if request.method == 'POST':
     title = request.POST['title']
     description = request.POST['description']
-    Notes.objects.create(user=request.user,title=title,description=description)
+    image=request.FILES.get('image')
+    Notes.objects.create(user=request.user,title=title,description=description,image=image)
 
     return redirect('notes')
   return render(request,'create_note.html')
@@ -93,6 +94,11 @@ def edit_note(request,id):
   if request.method == 'POST':
     note.title=request.POST['title']
     note.description=request.POST['description']
+    image=request.FILES.get('image')
+    if image:
+      if note.image:
+        note.image.delete(save=False)
+      note.image=image
     note.save()
     return redirect('notes')
   return render(request,'edit_note.html',{'note':note})
@@ -106,3 +112,12 @@ def delete_note(request,id):
     return redirect('notes')
 
   return render(request,'delete_note.html',{'note':note})
+
+@login_required
+def delete_image(request,id):
+  note=Notes.objects.get(id=id,user=request.user)
+  if request.method == 'POST' and note.image:
+    note.image.delete(save=False)
+    note.image=None
+    note.save()
+  return redirect('edit_note',id=id)
