@@ -10,7 +10,7 @@ def main(request):
     if not request.user.is_authenticated:
         return redirect("login")
     notes = Notes.objects.filter(user=request.user)
-    return render(request, "notes.html", {"notes": notes})
+    return render(request, "main.html", {"notes": notes})
 
 def register_view(request):
   if request.method == 'POST':
