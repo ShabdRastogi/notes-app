@@ -126,6 +126,7 @@ DEBUG=False
 
 AWS_ACCESS_KEY_ID=
 AWS_SECRET_ACCESS_KEY=
+DATABASE_URL=
 ```
 
 **Do not commit your `.env` file or any secret credentials to GitHub.**
@@ -177,6 +178,29 @@ The application also provides REST APIs for managing notes using **Django REST F
 
 Returns all notes from the database.
 
+**Success Response:**
+
+```text
+200 OK
+```
+
+Example response:
+
+```json
+[
+    {
+        "id": 1,
+        "title": "Learning DRF",
+        "description": "Understanding REST APIs"
+    },
+    {
+        "id": 2,
+        "title": "Django",
+        "description": "Learning Django REST Framework"
+    }
+]
+```
+
 ### Create a Note
 
 **POST**
@@ -220,7 +244,158 @@ Example response:
 
 The response contains the serializer validation errors.
 
-> More API endpoints will be added as the REST API is developed.
+Example:
+
+```json
+{
+    "title": [
+        "This field may not be blank."
+    ]
+}
+```
+
+### Get a Single Note
+
+**GET**
+
+```text
+/api/notes/<id>/
+```
+
+Returns the details of a specific note using its ID.
+
+**Example:**
+
+```text
+/api/notes/1/
+```
+
+**Success Response:**
+
+```text
+200 OK
+```
+
+Example response:
+
+```json
+{
+    "id": 1,
+    "title": "Learning DRF",
+    "description": "Understanding REST APIs"
+}
+```
+
+**If the note does not exist:**
+
+```text
+404 Not Found
+```
+
+Example response:
+
+```json
+{
+    "detail": "Not found."
+}
+```
+
+### Update a Note
+
+**PUT**
+
+```text
+/api/notes/<id>/
+```
+
+Updates an existing note using its ID.
+
+**Example:**
+
+```text
+/api/notes/1/
+```
+
+**Request Body:**
+
+```json
+{
+    "title": "Learning Django REST Framework",
+    "description": "Learning how to create and update notes using DRF."
+}
+```
+
+**Success Response:**
+
+```text
+200 OK
+```
+
+Example response:
+
+```json
+{
+    "id": 1,
+    "title": "Learning Django REST Framework",
+    "description": "Learning how to create and update notes using DRF."
+}
+```
+
+**Invalid Request:**
+
+```text
+400 Bad Request
+```
+
+The response contains the serializer validation errors.
+
+**If the note does not exist:**
+
+```text
+404 Not Found
+```
+
+Example response:
+
+```json
+{
+    "detail": "Not found."
+}
+```
+
+### Delete a Note
+
+**DELETE**
+
+```text
+/api/notes/<id>/
+```
+
+Deletes an existing note using its ID.
+
+**Example:**
+
+```text
+/api/notes/1/
+```
+
+**Success Response:**
+
+```text
+204 No Content
+```
+
+## API Summary
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/notes/` | Get all notes |
+| POST | `/api/notes/` | Create a new note |
+| GET | `/api/notes/<id>/` | Get a single note |
+| PUT | `/api/notes/<id>/` | Update a note |
+| DELETE | `/api/notes/<id>/` | Delete a note |
+
+> More API endpoints may be added as the REST API is developed.
 
 ## Notes Functionality
 
@@ -274,16 +449,17 @@ Additional validation is performed through Django's authentication and model sys
 
 The following environment variables are used by the project:
 
-| Variable                   | Purpose                                 |
+| Variable | Purpose |
 | -------------------------- | --------------------------------------- |
-| `SECRET_KEY`               | Django secret key                       |
-| `DEBUG`                    | Django debug mode                       |
-| `AWS_ACCESS_KEY_ID`        | AWS access key                          |
-| `AWS_SECRET_ACCESS_KEY`    | AWS secret access key                   |
-| `AWS_STORAGE_BUCKET_NAME`  | S3 bucket name                          |
-| `AWS_S3_REGION_NAME`       | AWS S3 region                           |
-| `AWS_S3_SIGNATURE_VERSION` | S3 signature version                    |
-| `AWS_QUERYSTRING_AUTH`     | Controls S3 query-string authentication |
+| `SECRET_KEY` | Django secret key |
+| `DEBUG` | Django debug mode |
+| `AWS_ACCESS_KEY_ID` | AWS access key |
+| `AWS_SECRET_ACCESS_KEY` | AWS secret access key |
+| `AWS_STORAGE_BUCKET_NAME` | S3 bucket name |
+| `AWS_S3_REGION_NAME` | AWS S3 region |
+| `AWS_S3_SIGNATURE_VERSION` | S3 signature version |
+| `AWS_QUERYSTRING_AUTH` | Controls S3 query-string authentication |
+| `DATABASE_URL` | Database connection URL |
 
 Keep sensitive values private and never commit them to the repository.
 

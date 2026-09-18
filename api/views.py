@@ -1,7 +1,7 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response 
 from rest_framework import status 
-from django.shortcuts import get_list_or_404 
+from django.shortcuts import get_object_or_404 
 from main.models import Notes
 from .serializers import NotesSerializer 
 
@@ -23,5 +23,18 @@ def create_notes(request):
 
 
 
+@api_view(['GET'])
+def get_note(request,id):
+  note = get_object_or_404(Notes,id=id)
+  serializer = NotesSerializer(note)
+  return Response(serializer.data)
 
 
+@api_view(['PUT'])
+def update_note(request,id):
+  note= get_object_or_404(Notes,id=id)
+  serializer = NotesSerializer(note,data=request.data)
+  if serializer.is_valid():
+    serializer.save()
+    return Response(serializer.data)
+  return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
