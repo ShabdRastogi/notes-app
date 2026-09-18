@@ -7,9 +7,10 @@ import re
 from django.contrib import messages
 
 def main(request):
+    notes = Notes.objects.filter(user=request.user)
     if not request.user.is_authenticated:
       return redirect('login')
-    return render(request,'main.html')
+    return render(request,'main.html',{'notes': notes})
 
 def register_view(request):
   if request.method == 'POST':
