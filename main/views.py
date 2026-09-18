@@ -17,10 +17,10 @@ def register_view(request):
     password = request.POST['password']
     confirm_password = request.POST['confirm_password']
 
-    username_pattern = r'^[a-zA-Z0-9]+$'
+    username_pattern = r'^[a-zA-Z0-9_-]{3,16}$'
     if not re.match(username_pattern,username):
       return render(request,'register.html',{
-        'error':'Username can only contain letters and numbers'
+        'error':'Username must be 3 to 16 characters and use only letters, numbers, _ or -.'
       })
 
     password_pattern = r'^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[@$!%*?&])[A-Za-z0-9@$!%*?&]{8,}$'
