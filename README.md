@@ -385,6 +385,20 @@ Deletes an existing note using its ID.
 204 No Content
 ```
 
+**If the note does not exist:**
+
+```text
+404 Not Found
+```
+
+Example response:
+
+```json
+{
+    "detail": "Not found."
+}
+```
+
 ## API Summary
 
 | Method | Endpoint | Description |

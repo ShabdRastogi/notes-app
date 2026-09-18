@@ -33,8 +33,14 @@ def get_note(request,id):
 @api_view(['PUT'])
 def update_note(request,id):
   note= get_object_or_404(Notes,id=id)
-  serializer = NotesSerializer(note,data=request.data)
+  serializer = NotesSerializer(note,data=request.data,partial=True)
   if serializer.is_valid():
     serializer.save()
     return Response(serializer.data)
   return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['DELETE'])
+def delete_note(request,id):
+  note =get_object_or_404(Notes,id=id)
+  note.delete()
+  return Response(status=status.HTTP_204_NO_CONTENT)
