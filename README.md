@@ -17,6 +17,7 @@ A simple full-stack Notes Application built with **Django**. Users can create, v
 * Regex-based username and password validation
 * Django Admin Panel
 * AWS S3 storage for uploaded images
+* REST API for notes
 * Responsive and simple user interface
 
 ## Tech Stack
@@ -25,6 +26,7 @@ A simple full-stack Notes Application built with **Django**. Users can create, v
 
 * Python
 * Django
+* Django REST Framework
 * SQLite for local development
 * AWS S3 for image storage
 
@@ -119,7 +121,9 @@ Example:
 
 ```env
 SECRET_KEY=
+
 DEBUG=False
+
 AWS_ACCESS_KEY_ID=
 AWS_SECRET_ACCESS_KEY=
 ```
@@ -158,6 +162,65 @@ The Django Admin Panel is available at:
 ```text
 http://127.0.0.1:8000/admin/
 ```
+
+## API Endpoints
+
+The application also provides REST APIs for managing notes using **Django REST Framework**.
+
+### Get All Notes
+
+**GET**
+
+```text
+/api/notes/
+```
+
+Returns all notes from the database.
+
+### Create a Note
+
+**POST**
+
+```text
+/api/notes/
+```
+
+Creates a new note using the data provided by the client.
+
+**Request Body:**
+
+```json
+{
+    "title": "Learning DRF",
+    "description": "Understanding REST APIs"
+}
+```
+
+**Success Response:**
+
+```text
+201 Created
+```
+
+Example response:
+
+```json
+{
+    "id": 1,
+    "title": "Learning DRF",
+    "description": "Understanding REST APIs"
+}
+```
+
+**Invalid Request:**
+
+```text
+400 Bad Request
+```
+
+The response contains the serializer validation errors.
+
+> More API endpoints will be added as the REST API is developed.
 
 ## Notes Functionality
 
