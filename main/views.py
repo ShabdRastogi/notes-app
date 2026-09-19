@@ -2,7 +2,7 @@ from django.shortcuts import render,HttpResponse,redirect
 from django.contrib.auth.models import User
 from django.contrib.auth import login,authenticate,logout
 from django.contrib.auth.decorators import login_required
-from .models import Notes
+from .models import Notes, PasswordResetOTP
 import re
 from django.contrib import messages
 

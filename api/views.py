@@ -1,30 +1,35 @@
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.response import Response 
-from rest_framework import status 
-from django.shortcuts import get_object_or_404 
-from main.models import Notes
-from .serializers import NotesSerializer, RegisterSerializer
+from rest_framework.response import Response
+from rest_framework import status
+from django.shortcuts import get_object_or_404
+from main.models import Notes, EmailVerificationOTP, PasswordResetOTP
+from .serializers import NotesSerializer, RegisterSerializer, VerifyOTPSerializer, ResetPasswordSerializer
 from rest_framework.permissions import IsAuthenticated
-from django.contrib.auth.models import User 
+from django.contrib.auth.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
-from django.contrib.auth import authenticate
 from rest_framework.views import APIView
 from drf_spectacular.utils import extend_schema, OpenApiResponse
+import random
+from django.core.mail import send_mail
+from django.utils import timezone
+from datetime import timedelta
+
 
 @extend_schema(
   summary='Get all notes',
   description="Returns all notes belonging to the authenticated user.",
   responses={
-    200: NotesSerializer,
-    401: OpenApiResponse(description = 'Authentication credentials were not provided or are invalid.')
+    200: NotesSerializer(many=True),
+    401: OpenApiResponse(description='Authentication credentials were not provided or are invalid.')
   }
 )
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def get_notes(request):
-  notes =Notes.objects.filter(user=request.user)
-  serializer = NotesSerializer(notes,many=True)
-  return Response(serializer.data)
+class GetNotesApi(APIView):
+  permission_classes = [IsAuthenticated]
+
+  def get(self,request):
+    notes = Notes.objects.filter(user=request.user)
+    serializer = NotesSerializer(notes,many=True)
+    return Response(serializer.data)
+
 
 @extend_schema(
   summary='Create a note',
@@ -32,18 +37,19 @@ def get_notes(request):
   request=NotesSerializer,
   responses={
     201: NotesSerializer,
-    400: OpenApiResponse(description= 'Invalid note data'),
-    401: OpenApiResponse(description= 'Authentication required'),
+    400: OpenApiResponse(description='Invalid note data'),
+    401: OpenApiResponse(description='Authentication required'),
   }
 )
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def create_notes(request):
-  serializer = NotesSerializer(data=request.data)
-  if serializer.is_valid():
-    serializer.save(user=request.user)
-    return Response(serializer.data,status=status.HTTP_201_CREATED)
-  return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+class CreateNotesApi(APIView):
+  permission_classes = [IsAuthenticated]
+
+  def post(self,request):
+    serializer = NotesSerializer(data=request.data)
+    if serializer.is_valid():
+      serializer.save(user=request.user)
+      return Response(serializer.data,status=status.HTTP_201_CREATED)
+    return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
 
 
 @extend_schema(
@@ -55,12 +61,14 @@ def create_notes(request):
     404: OpenApiResponse(description="Note not found."),
   },
 )
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def get_note(request,id):
-  note = get_object_or_404(Notes,id=id,user=request.user)
-  serializer = NotesSerializer(note)
-  return Response(serializer.data)
+class GetNoteApi(APIView):
+  permission_classes = [IsAuthenticated]
+
+  def get(self,request,id):
+    note = get_object_or_404(Notes,id=id,user=request.user)
+    serializer = NotesSerializer(note)
+    return Response(serializer.data)
+
 
 @extend_schema(
   summary="Update a note",
@@ -73,15 +81,17 @@ def get_note(request,id):
     404: OpenApiResponse(description="Note not found."),
   },
 )
-@api_view(['PATCH'])
-@permission_classes([IsAuthenticated])
-def update_note(request,id):
-  note= get_object_or_404(Notes,id=id, user=request.user)
-  serializer = NotesSerializer(note,data=request.data,partial=True)
-  if serializer.is_valid():
-    serializer.save()
-    return Response(serializer.data)
-  return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+class UpdateNoteApi(APIView):
+  permission_classes = [IsAuthenticated]
+
+  def patch(self,request,id):
+    note = get_object_or_404(Notes,id=id,user=request.user)
+    serializer = NotesSerializer(note,data=request.data,partial=True)
+    if serializer.is_valid():
+      serializer.save()
+      return Response(serializer.data)
+    return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+
 
 @extend_schema(
   responses={
@@ -90,12 +100,14 @@ def update_note(request,id):
     404: {'description': 'Note not found'},
   }
 )
-@api_view(['DELETE'])
-@permission_classes([IsAuthenticated])
-def delete_note(request,id):
-  note =get_object_or_404(Notes,id=id,user=request.user)
-  note.delete()
-  return Response(status=status.HTTP_204_NO_CONTENT)
+class DeleteNoteApi(APIView):
+  permission_classes = [IsAuthenticated]
+
+  def delete(self,request,id):
+    note = get_object_or_404(Notes,id=id,user=request.user)
+    note.delete()
+    return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 @extend_schema(
   request=RegisterSerializer,
@@ -104,16 +116,119 @@ def delete_note(request,id):
     400: OpenApiResponse(description="Invalid registration data"),
   }
 )
-@api_view(['POST'])
-def register(request):
-  serializer = RegisterSerializer(data=request.data)
-  if serializer.is_valid():
-    serializer.save()
+class RegisterApi(APIView):
+
+  def post(self,request):
+    serializer = RegisterSerializer(data=request.data)
+    if serializer.is_valid():
+      user = serializer.save()
+      user.is_active = False
+      user.save()
+
+      otp = str(random.randint(100000,999999))
+
+      EmailVerificationOTP.objects.create(user=user,otp=otp)
+
+      send_mail(
+        'Email Verification OTP',
+        f'''
+Hello {user.username},
+Your email verification OTP is:
+{otp}
+This OTP is valid for 5 minutes.
+If you did not create this account, please ignore this email.
+''',
+        None,
+        [user.email],
+        fail_silently=False
+      )
+
+      return Response(
+        {'message':'User registered successfully. OTP sent to the mail'},
+        status=status.HTTP_201_CREATED
+      )
+
+    return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+
+
+@extend_schema(
+  summary="Verify email",
+  description="Verifies the user's email using the OTP sent during registration.",
+  request={
+    'application/json': {
+      'type': 'object',
+      'properties': {
+        'email': {
+          'type': 'string',
+          'format': 'email'
+        },
+        'otp': {
+          'type': 'string',
+          'example': '123456'
+        },
+      },
+      'required': ['email','otp'],
+    }
+  },
+  responses={
+    200: OpenApiResponse(
+      description="Email verified successfully."
+    ),
+    400: OpenApiResponse(
+      description="Invalid or expired OTP."
+    ),
+    404: OpenApiResponse(
+      description="User not found."
+    ),
+  },
+)
+class VerifyEmailApi(APIView):
+
+  def post(self,request):
+    email = request.data.get('email')
+    otp = request.data.get('otp')
+
+    if not email or not otp:
+      return Response(
+        {'error':'Email and OTP are required.'},
+        status=status.HTTP_400_BAD_REQUEST
+      )
+
+    user = get_object_or_404(User,email=email)
+
+    verification = EmailVerificationOTP.objects.filter(
+      user=user,
+      is_verified=False
+    ).order_by('-created_at').first()
+
+    if not verification:
+      return Response(
+        {'error':'No valid OTP found.'},
+        status=status.HTTP_400_BAD_REQUEST
+      )
+
+    if timezone.now() > verification.created_at + timedelta(minutes=5):
+      return Response(
+        {'error':'OTP has expired.'},
+        status=status.HTTP_400_BAD_REQUEST
+      )
+
+    if verification.otp != otp:
+      return Response(
+        {'error':'Invalid OTP.'},
+        status=status.HTTP_400_BAD_REQUEST
+      )
+
+    verification.is_verified = True
+    verification.save()
+
+    user.is_active = True
+    user.save()
+
     return Response(
-      {'message':'User registered successfully'},
-      status=status.HTTP_201_CREATED)
-  
-  return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+      {'message':'Email verified successfully.'},
+      status=status.HTTP_200_OK
+    )
 
 
 @extend_schema(
@@ -131,8 +246,8 @@ def register(request):
           'description': 'JWT refresh token.'
         }
       },
-    'required': ['refresh'],
-    } 
+      'required': ['refresh'],
+    }
   },
   responses={
     205: OpenApiResponse(
@@ -147,18 +262,221 @@ def register(request):
   },
 )
 class LogoutApi(APIView):
-  permission_classes =[IsAuthenticated]
+  permission_classes = [IsAuthenticated]
+
   def post(self,request):
     try:
-      refresh_token=request.data["refresh"]
-      token=RefreshToken(refresh_token)
+      refresh_token = request.data["refresh"]
+      token = RefreshToken(refresh_token)
       token.blacklist()
+
       return Response(
         {'message':"Successfully Logged out"},
         status=status.HTTP_205_RESET_CONTENT
       )
+
     except:
       return Response(
         {'error':'Invalid refresh token'},
         status=status.HTTP_400_BAD_REQUEST
       )
+
+
+@extend_schema(
+  summary="Verify password reset OTP",
+  description="Verifies the OTP sent to the user's email for password reset.",
+  request=VerifyOTPSerializer,
+  responses={
+    200: OpenApiResponse(
+      description="OTP verified successfully"
+    ),
+    400: OpenApiResponse(
+      description="Invalid email, invalid OTP, or expired OTP"
+    ),
+  }
+)
+class VerifyOTPApi(APIView):
+
+  def post(self,request):
+    email = request.data.get('email')
+    otp = request.data.get('otp')
+
+    try:
+      user = User.objects.get(email=email)
+
+    except User.DoesNotExist:
+      return Response(
+        {"error":"Invalid email"},
+        status=status.HTTP_400_BAD_REQUEST
+      )
+
+    try:
+      otp_record = PasswordResetOTP.objects.filter(
+        user=user,
+        otp=otp,
+        is_verified=False
+      ).latest('created_at')
+
+    except PasswordResetOTP.DoesNotExist:
+      return Response(
+        {"error":"Invalid OTP"},
+        status=status.HTTP_400_BAD_REQUEST
+      )
+
+    if otp_record.is_expired():
+      return Response(
+        {"error":"OTP has expired"},
+        status=status.HTTP_400_BAD_REQUEST
+      )
+
+    otp_record.is_verified = True
+    otp_record.save()
+
+    return Response(
+      {"message":"OTP verified successfully"},
+      status=status.HTTP_200_OK
+    )
+
+
+@extend_schema(
+  summary="Forgot password",
+  description="Sends a password reset OTP to the user's registered email.",
+  request={
+    'application/json': {
+      'type': 'object',
+      'properties': {
+        'email': {
+          'type': 'string',
+          'format': 'email'
+        }
+      },
+      'required': ['email'],
+    }
+  },
+  responses={
+    200: OpenApiResponse(
+      description="OTP sent successfully."
+    ),
+    404: OpenApiResponse(
+      description="User not found."
+    ),
+  }
+)
+class ForgotPasswordApi(APIView):
+
+  def post(self,request):
+    email = request.data.get('email')
+
+    if not email:
+      return Response(
+        {'error':'Email is required.'},
+        status=status.HTTP_400_BAD_REQUEST
+      )
+
+    try:
+      user = User.objects.get(email=email)
+
+    except User.DoesNotExist:
+      return Response(
+        {'error':'User not found.'},
+        status=status.HTTP_404_NOT_FOUND
+      )
+
+    otp = str(random.randint(100000,999999))
+
+    PasswordResetOTP.objects.create(
+      user=user,
+      otp=otp
+    )
+
+    send_mail(
+      'Password Reset OTP',
+      f'''
+Hello {user.username},
+
+Your password reset OTP is:
+
+{otp}
+
+This OTP is valid for 5 minutes.
+
+If you did not request a password reset, please ignore this email.
+''',
+      None,
+      [user.email],
+      fail_silently=False
+    )
+
+    return Response(
+      {'message':'OTP sent to the mail'},
+      status=status.HTTP_200_OK
+    )
+
+
+@extend_schema(
+  summary="Reset password",
+  description="Resets the user's password after successful OTP verification.",
+  request=ResetPasswordSerializer,
+  responses={
+    200: OpenApiResponse(
+      description="Password reset successfully."
+    ),
+    400: OpenApiResponse(
+      description="OTP has not been verified or password reset is not allowed."
+    ),
+    404: OpenApiResponse(
+      description="User not found."
+    ),
+  }
+)
+class ResetPasswordApi(APIView):
+
+  def post(self,request):
+    serializer = ResetPasswordSerializer(data=request.data)
+
+    if not serializer.is_valid():
+      return Response(
+        serializer.errors,
+        status=status.HTTP_400_BAD_REQUEST
+      )
+
+    email = serializer.validated_data['email']
+    new_password = serializer.validated_data['new_password']
+
+    try:
+      user = User.objects.get(email=email)
+
+    except User.DoesNotExist:
+      return Response(
+        {'error':'User not found.'},
+        status=status.HTTP_404_NOT_FOUND
+      )
+
+    try:
+      otp_record = PasswordResetOTP.objects.filter(
+        user=user,
+        is_verified=True
+      ).latest('created_at')
+
+    except PasswordResetOTP.DoesNotExist:
+      return Response(
+        {'error':'OTP has not been verified.'},
+        status=status.HTTP_400_BAD_REQUEST
+      )
+
+    if otp_record.is_expired():
+      return Response(
+        {'error':'OTP verification has expired.'},
+        status=status.HTTP_400_BAD_REQUEST
+      )
+
+    user.set_password(new_password)
+    user.save()
+
+    otp_record.is_verified = False
+    otp_record.save()
+
+    return Response(
+      {'message':'Password reset successfully.'},
+      status=status.HTTP_200_OK
+    )
