@@ -44,6 +44,8 @@ INSTALLED_APPS = [
     "storages",
     'rest_framework',
     'api',
+    'rest_framework_simplejwt.token_blacklist',
+    'drf_spectacular',
 ]
 
 MIDDLEWARE = [
@@ -60,7 +62,8 @@ MIDDLEWARE = [
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-    )
+    ),
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
 ROOT_URLCONF = 'notesapp.urls'
@@ -163,4 +166,11 @@ MAILERS = {
     'default': {
         'BACKEND': 'django.core.mail.backends.console.EmailBackend',
     },
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Your Project API',
+    'DESCRIPTION': 'Your project description',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
 }

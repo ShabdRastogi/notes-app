@@ -15,4 +15,5 @@ urlpatterns = [
   path('notes/<int:id>/',views.get_note,name='get-note'),
   path('notes/update/<int:id>/',views.update_note,name='update-note'),
   path('notes/delete/<int:id>/',views.delete_note,name='delete-note'),
+  path('logout/',views.LogoutApi.as_view(),name='api_logout'),
 ]
