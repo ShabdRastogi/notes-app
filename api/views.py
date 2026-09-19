@@ -7,12 +7,35 @@ from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.views import APIView
-from drf_spectacular.utils import extend_schema, OpenApiResponse
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiResponse, OpenApiExample
 import random
 from django.core.mail import send_mail
 from django.utils import timezone
 from datetime import timedelta
+from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
+class LoginSerializer(TokenObtainPairSerializer):
+	pass
+
+
+@extend_schema_view(
+	post=extend_schema(
+		request=LoginSerializer,
+		examples=[
+			OpenApiExample(
+				'Login Example',
+				value={
+					'username': 'Test_user',
+					'password': 'Test@123'
+				},
+				request_only=True
+			)
+		]
+	)
+)
+class LoginApi(TokenObtainPairView):
+	serializer_class = LoginSerializer
 
 @extend_schema(
   summary='Get all notes',
@@ -35,6 +58,16 @@ class GetNotesApi(APIView):
   summary='Create a note',
   description='Creates a note for the authenticated user',
   request=NotesSerializer,
+	examples=[
+		OpenApiExample(
+			'Create Note Example',
+			value={
+				'title': 'Django REST Framework',
+				'description': 'Learning APIView and JWT authentication.'
+			},
+			request_only=True
+		)
+	],
   responses={
     201: NotesSerializer,
     400: OpenApiResponse(description='Invalid note data'),
@@ -74,6 +107,16 @@ class GetNoteApi(APIView):
   summary="Update a note",
   description="Partially updates a specific note belonging to the authenticated user.",
   request=NotesSerializer,
+	examples=[
+		OpenApiExample(
+			'Update Note Example',
+			value={
+				'title': 'Django REST Framework Updated',
+				'description': 'Updated notes about APIView and JWT authentication.'
+			},
+			request_only=True
+		)
+	],
   responses={
     200: NotesSerializer,
     400: OpenApiResponse(description="Invalid note data."),
@@ -110,8 +153,19 @@ class DeleteNoteApi(APIView):
 
 
 @extend_schema(
-  request=RegisterSerializer,
-  responses={
+	request=RegisterSerializer,
+	examples=[
+		OpenApiExample(
+			'Register Example',
+			value={
+				'username': 'Test_user',
+				'email': 'testuser@example.com',
+				'password': 'Test@123'
+			},
+			request_only=True
+		)
+	],
+	responses={
     201: OpenApiResponse(description="User registered successfully"),
     400: OpenApiResponse(description="Invalid registration data"),
   }
@@ -170,7 +224,17 @@ If you did not create this account, please ignore this email.
       'required': ['email','otp'],
     }
   },
-  responses={
+	examples=[
+		OpenApiExample(
+			'Verify Email Example',
+			value={
+				'email': 'testuser@example.com',
+				'otp': '123456'
+			},
+			request_only=True
+		)
+	],
+	responses={
     200: OpenApiResponse(
       description="Email verified successfully."
     ),
@@ -249,7 +313,16 @@ class VerifyEmailApi(APIView):
       'required': ['refresh'],
     }
   },
-  responses={
+	examples=[
+		OpenApiExample(
+			'Logout Example',
+			value={
+				'refresh': 'your_refresh_token'
+			},
+			request_only=True
+		)
+	],
+	responses={
     205: OpenApiResponse(
       description="Successfully logged out."
     ),
@@ -286,7 +359,17 @@ class LogoutApi(APIView):
   summary="Verify password reset OTP",
   description="Verifies the OTP sent to the user's email for password reset.",
   request=VerifyOTPSerializer,
-  responses={
+	examples=[
+		OpenApiExample(
+			'Verify OTP Example',
+			value={
+				'email': 'testuser@example.com',
+				'otp': '123456'
+			},
+			request_only=True
+		)
+	],
+	responses={
     200: OpenApiResponse(
       description="OTP verified successfully"
     ),
@@ -353,7 +436,16 @@ class VerifyOTPApi(APIView):
       'required': ['email'],
     }
   },
-  responses={
+	examples=[
+		OpenApiExample(
+			'Forgot Password Example',
+			value={
+				'email': 'testuser@example.com'
+			},
+			request_only=True
+		)
+	],
+	responses={
     200: OpenApiResponse(
       description="OTP sent successfully."
     ),
@@ -417,7 +509,17 @@ If you did not request a password reset, please ignore this email.
   summary="Reset password",
   description="Resets the user's password after successful OTP verification.",
   request=ResetPasswordSerializer,
-  responses={
+	examples=[
+		OpenApiExample(
+			'Reset Password Example',
+			value={
+				'email': 'testuser@example.com',
+				'new_password': 'NewPass@123'
+			},
+			request_only=True
+		)
+	],
+	responses={
     200: OpenApiResponse(
       description="Password reset successfully."
     ),
