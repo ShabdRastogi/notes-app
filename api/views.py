@@ -6,12 +6,10 @@ from .serializers import NotesSerializer, RegisterSerializer, VerifyOTPSerialize
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework.views import APIView
+from rest_framework.views import APIView 
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiResponse, OpenApiExample
 import random
 from django.core.mail import send_mail
-from django.utils import timezone
-from datetime import timedelta
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.core.cache import cache
@@ -189,9 +187,9 @@ class RegisterApi(APIView):
       user.is_active = False
       user.save()
 
-      otp = str(random.randint(100000,999999))
-
-      EmailVerificationOTP.objects.create(user=user,otp=otp)
+      otp = str(random.randint(100000, 999999))
+      cache_key = f"otp:email_verification:{user.email}"
+      cache.set(cache_key,otp,timeout=300)
 
       send_mail(
         'Email Verification OTP',
@@ -267,41 +265,34 @@ class VerifyEmailApi(APIView):
         {'error':'Email and OTP are required.'},
         status=status.HTTP_400_BAD_REQUEST
       )
+    try:
+      user = User.objects.get(email=email)
+    except User.DoesNotExist:
+      return Response({'error': 'User not found.'},status=status.HTTP_404_NOT_FOUND)
 
-    user = get_object_or_404(User,email=email)
+    cache_key = f"otp:email_verification:{email}"
+    stored_otp = cache.get(cache_key)
 
-    verification = EmailVerificationOTP.objects.filter(
-      user=user,
-      is_verified=False
-    ).order_by('-created_at').first()
-
-    if not verification:
+    if stored_otp is None:
       return Response(
-        {'error':'No valid OTP found.'},
+        {'error': 'OTP has expired or does not exist.'},
         status=status.HTTP_400_BAD_REQUEST
       )
 
-    if timezone.now() > verification.created_at + timedelta(minutes=5):
+    if stored_otp != otp:
       return Response(
-        {'error':'OTP has expired.'},
+        {'error': 'Invalid OTP.'},
         status=status.HTTP_400_BAD_REQUEST
       )
-
-    if verification.otp != otp:
-      return Response(
-        {'error':'Invalid OTP.'},
-        status=status.HTTP_400_BAD_REQUEST
-      )
-
-    verification.is_verified = True
-    verification.save()
 
     user.is_active = True
     user.save()
 
+    cache.delete(cache_key)
+
     return Response(
-      {'message':'Email verified successfully.'},
-      status=status.HTTP_200_OK
+        {'message': 'Email verified successfully.'},
+        status=status.HTTP_200_OK
     )
 
 
@@ -391,43 +382,52 @@ class LogoutApi(APIView):
 class VerifyOTPApi(APIView):
   throttle_scope = 'otp'
 
-  def post(self,request):
+  def post(self, request):
     email = request.data.get('email')
     otp = request.data.get('otp')
+    if not email or not otp:
+      return Response(
+      {'error': 'Email and OTP are required.'},
+      status=status.HTTP_400_BAD_REQUEST
+    )
 
     try:
       user = User.objects.get(email=email)
 
     except User.DoesNotExist:
       return Response(
-        {"error":"Invalid email"},
+        {'error': 'Invalid email.'},
         status=status.HTTP_400_BAD_REQUEST
       )
 
-    try:
-      otp_record = PasswordResetOTP.objects.filter(
-        user=user,
-        otp=otp,
-        is_verified=False
-      ).latest('created_at')
+    cache_key = f"otp:password_reset:{email}"
 
-    except PasswordResetOTP.DoesNotExist:
+    stored_otp = cache.get(cache_key)
+
+    if stored_otp is None:
       return Response(
-        {"error":"Invalid OTP"},
+        {'error': 'OTP has expired or does not exist.'},
         status=status.HTTP_400_BAD_REQUEST
       )
 
-    if otp_record.is_expired():
+    if stored_otp != otp:
       return Response(
-        {"error":"OTP has expired"},
+        {'error': 'Invalid OTP.'},
         status=status.HTTP_400_BAD_REQUEST
       )
 
-    otp_record.is_verified = True
-    otp_record.save()
+    verified_key = f"otp:password_reset_verified:{email}"
+
+    cache.set(
+      verified_key,
+      True,
+      timeout=300
+    )
+
+    cache.delete(cache_key)
 
     return Response(
-      {"message":"OTP verified successfully"},
+      {'message': 'OTP verified successfully.'},
       status=status.HTTP_200_OK
     )
 
@@ -485,12 +485,10 @@ class ForgotPasswordApi(APIView):
         status=status.HTTP_404_NOT_FOUND
       )
 
-    otp = str(random.randint(100000,999999))
+    otp = str(random.randint(100000, 999999))
 
-    PasswordResetOTP.objects.create(
-      user=user,
-      otp=otp
-    )
+    cache_key = f"otp:password_reset:{user.email}"
+    cache.set(cache_key,otp,timeout=300)
 
     send_mail(
       'Password Reset OTP',
@@ -544,7 +542,7 @@ If you did not request a password reset, please ignore this email.
 )
 class ResetPasswordApi(APIView):
 
-  def post(self,request):
+  def post(self, request):
     serializer = ResetPasswordSerializer(data=request.data)
 
     if not serializer.is_valid():
@@ -561,35 +559,24 @@ class ResetPasswordApi(APIView):
 
     except User.DoesNotExist:
       return Response(
-        {'error':'User not found.'},
+        {'error': 'User not found.'},
         status=status.HTTP_404_NOT_FOUND
       )
 
-    try:
-      otp_record = PasswordResetOTP.objects.filter(
-        user=user,
-        is_verified=True
-      ).latest('created_at')
-
-    except PasswordResetOTP.DoesNotExist:
+    verified_key = f"otp:password_reset_verified:{email}"
+    verified = cache.get(verified_key)
+    if not verified:
       return Response(
-        {'error':'OTP has not been verified.'},
-        status=status.HTTP_400_BAD_REQUEST
-      )
-
-    if otp_record.is_expired():
-      return Response(
-        {'error':'OTP verification has expired.'},
+        {'error': 'OTP has not been verified or verification has expired.'},
         status=status.HTTP_400_BAD_REQUEST
       )
 
     user.set_password(new_password)
     user.save()
 
-    otp_record.is_verified = False
-    otp_record.save()
+    cache.delete(verified_key)
 
     return Response(
-      {'message':'Password reset successfully.'},
+      {'message': 'Password reset successfully.'},
       status=status.HTTP_200_OK
     )
