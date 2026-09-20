@@ -14,6 +14,7 @@ from django.utils import timezone
 from datetime import timedelta
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from django.core.cache import cache
 
 class LoginSerializer(TokenObtainPairSerializer):
 	pass
@@ -35,7 +36,8 @@ class LoginSerializer(TokenObtainPairSerializer):
 	)
 )
 class LoginApi(TokenObtainPairView):
-	serializer_class = LoginSerializer
+  throttle_scope = 'login'
+  serializer_class = LoginSerializer
 
 @extend_schema(
   summary='Get all notes',
@@ -48,9 +50,14 @@ class LoginApi(TokenObtainPairView):
 class GetNotesApi(APIView):
   permission_classes = [IsAuthenticated]
 
-  def get(self,request):
+  def get(self, request):
+    cache_key = f"notes:user:{request.user.id}"
+    cached_notes = cache.get(cache_key)
+    if cached_notes is not None:
+      return Response(cached_notes)
     notes = Notes.objects.filter(user=request.user)
-    serializer = NotesSerializer(notes,many=True)
+    serializer = NotesSerializer(notes, many=True)
+    cache.set(cache_key, serializer.data, timeout=300)
     return Response(serializer.data)
 
 
@@ -81,6 +88,7 @@ class CreateNotesApi(APIView):
     serializer = NotesSerializer(data=request.data)
     if serializer.is_valid():
       serializer.save(user=request.user)
+      cache.delete(f"notes:user:{request.user.id}")
       return Response(serializer.data,status=status.HTTP_201_CREATED)
     return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
 
@@ -132,6 +140,7 @@ class UpdateNoteApi(APIView):
     serializer = NotesSerializer(note,data=request.data,partial=True)
     if serializer.is_valid():
       serializer.save()
+      cache.delete(f"notes:user:{request.user.id}")
       return Response(serializer.data)
     return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
 
@@ -146,9 +155,10 @@ class UpdateNoteApi(APIView):
 class DeleteNoteApi(APIView):
   permission_classes = [IsAuthenticated]
 
-  def delete(self,request,id):
+  def delete(self, request, id):
     note = get_object_or_404(Notes,id=id,user=request.user)
     note.delete()
+    cache.delete(f"notes:user:{request.user.id}")
     return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -198,7 +208,7 @@ If you did not create this account, please ignore this email.
       )
 
       return Response(
-        {'message':'User registered successfully. OTP sent to the mail'},
+        {'message':'OTP sent to the mail'},
         status=status.HTTP_201_CREATED
       )
 
@@ -379,6 +389,7 @@ class LogoutApi(APIView):
   }
 )
 class VerifyOTPApi(APIView):
+  throttle_scope = 'otp'
 
   def post(self,request):
     email = request.data.get('email')
@@ -455,7 +466,7 @@ class VerifyOTPApi(APIView):
   }
 )
 class ForgotPasswordApi(APIView):
-
+  throttle_scope = 'password_reset'
   def post(self,request):
     email = request.data.get('email')
 
