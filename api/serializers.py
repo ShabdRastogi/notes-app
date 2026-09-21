@@ -5,10 +5,22 @@ import re
 
 
 class NotesSerializer(serializers.ModelSerializer):
-	class Meta:
-		model = Notes
-		fields = '__all__'
-		read_only_fields = ['user']
+  class Meta:
+    model = Notes
+    fields = [
+      "note_number",
+      "title",
+      "description",
+      "image",
+      "created_at",
+      "updated_at",
+    ]
+
+    read_only_fields = [
+      "note_number",
+      "created_at",
+      "updated_at",
+    ]
 
 
 class RegisterSerializer(serializers.ModelSerializer):

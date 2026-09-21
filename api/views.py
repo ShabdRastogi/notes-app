@@ -85,7 +85,12 @@ class CreateNotesApi(APIView):
   def post(self,request):
     serializer = NotesSerializer(data=request.data)
     if serializer.is_valid():
-      serializer.save(user=request.user)
+      last_note = Notes.objects.filter(user=request.user).order_by("-note_number").first()
+      if last_note:
+        note_number = last_note.note_number + 1
+      else:
+        note_number = 1
+      serializer.save(user=request.user,note_number=note_number)
       cache.delete(f"notes:user:{request.user.id}")
       return Response(serializer.data,status=status.HTTP_201_CREATED)
     return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
@@ -103,8 +108,8 @@ class CreateNotesApi(APIView):
 class GetNoteApi(APIView):
   permission_classes = [IsAuthenticated]
 
-  def get(self,request,id):
-    note = get_object_or_404(Notes,id=id,user=request.user)
+  def get(self,request,note_number):
+    note = get_object_or_404(Notes,note_number=note_number,user=request.user)
     serializer = NotesSerializer(note)
     return Response(serializer.data)
 
@@ -133,8 +138,8 @@ class GetNoteApi(APIView):
 class UpdateNoteApi(APIView):
   permission_classes = [IsAuthenticated]
 
-  def patch(self,request,id):
-    note = get_object_or_404(Notes,id=id,user=request.user)
+  def patch(self,request,note_number):
+    note = get_object_or_404(Notes,note_number=note_number,user=request.user)
     serializer = NotesSerializer(note,data=request.data,partial=True)
     if serializer.is_valid():
       serializer.save()
@@ -153,8 +158,8 @@ class UpdateNoteApi(APIView):
 class DeleteNoteApi(APIView):
   permission_classes = [IsAuthenticated]
 
-  def delete(self, request, id):
-    note = get_object_or_404(Notes,id=id,user=request.user)
+  def delete(self, request, note_number):
+    note = get_object_or_404(Notes,note_number=note_number,user=request.user)
     note.delete()
     cache.delete(f"notes:user:{request.user.id}")
     return Response(status=status.HTTP_204_NO_CONTENT)

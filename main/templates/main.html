@@ -107,8 +107,8 @@
             {% endif %}
 
             <div class="actions">
-              <a class="edit" href="{% url 'edit_note' note.id %}">Edit</a>
-              <a class="delete" href="{% url 'delete_note' note.id %}">Delete</a>
+              <a class="edit" href="{% url 'edit_note' note.note_number %}">Edit</a>
+              <a class="delete" href="{% url 'delete_note' note.note_number %}">Delete</a>
             </div>
           </div>
 

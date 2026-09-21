@@ -84,14 +84,25 @@ def create_note(request):
     title = request.POST['title']
     description = request.POST['description']
     image=request.FILES.get('image')
-    Notes.objects.create(user=request.user,title=title,description=description,image=image)
+    last_note = Notes.objects.filter(user=request.user).order_by("-note_number").first()
+    if last_note:
+      note_number = last_note.note_number + 1
+    else:
+      note_number = 1
+    Notes.objects.create(
+      user=request.user,
+      note_number=note_number,
+      title=title,
+      description=description,
+      image=image
+    )
 
     return redirect('notes')
   return render(request,'create_note.html')
 
 @login_required
-def edit_note(request,id):
-  note=Notes.objects.get(id=id,user=request.user)
+def edit_note(request,note_number):
+  note=Notes.objects.get(note_number=note_number,user=request.user)
   if request.method == 'POST':
     note.title=request.POST['title']
     note.description=request.POST['description']
@@ -106,8 +117,8 @@ def edit_note(request,id):
 
 
 @login_required
-def delete_note(request,id):
-  note=Notes.objects.get(id=id,user=request.user)
+def delete_note(request,note_number):
+  note=Notes.objects.get(note_number=note_number,user=request.user)
   if request.method == 'POST':
     note.delete()
     return redirect('notes')
@@ -115,10 +126,10 @@ def delete_note(request,id):
   return render(request,'delete_note.html',{'note':note})
 
 @login_required
-def delete_image(request,id):
-  note=Notes.objects.get(id=id,user=request.user)
+def delete_image(request,note_number):
+  note=Notes.objects.get(note_number=note_number,user=request.user)
   if request.method == 'POST' and note.image:
     note.image.delete(save=False)
     note.image=None
     note.save()
-  return redirect('edit_note',id=id)
+  return redirect('edit_note',note_number=note_number)

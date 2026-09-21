@@ -6,14 +6,20 @@ from django.utils import timezone
 
 class Notes(models.Model):
   user = models.ForeignKey(User, on_delete=models.CASCADE)
-  title=models.CharField(max_length=300)
-  description=models.TextField()
-  image=models.ImageField(upload_to="notes/",blank=True,null=True)
-  created_at =models.DateTimeField(auto_now_add=True)
-  updated_at=models.DateTimeField(auto_now=True)
+  note_number = models.PositiveIntegerField(null=True,blank=True)
+  title = models.CharField(max_length=200)
+  description = models.TextField()
+  image = models.ImageField(upload_to="notes/",blank=True,null=True)
+  created_at = models.DateTimeField(auto_now_add=True)
+  updated_at = models.DateTimeField(auto_now=True)
 
-  def __str__(self):
-    return self.title
+  class Meta:
+    constraints = [
+      models.UniqueConstraint(
+        fields=["user", "note_number"],
+        name="unique_note_number_per_user"
+      )
+    ]
 
 
 class EmailVerificationOTP(models.Model):

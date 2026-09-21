@@ -72,7 +72,7 @@
       <button type="submit">Update Note</button>
     </form>
     {% if note.image %}
-      <form method="POST" action="{% url 'delete_image' note.id %}">
+      <form method="POST" action="{% url 'delete_image' note.note_number %}">
         {% csrf_token %}
         <button type="submit" class="delete-image">Delete Image</button>
       </form>
