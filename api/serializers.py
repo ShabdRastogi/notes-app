@@ -22,6 +22,12 @@ class NotesSerializer(serializers.ModelSerializer):
       "updated_at",
     ]
 
+class NotesPaginationSerializer(serializers.Serializer):
+  count = serializers.IntegerField()
+  next = serializers.URLField(allow_null=True)
+  previous = serializers.URLField(allow_null=True)
+  results = NotesSerializer(many=True)
+
 
 class RegisterSerializer(serializers.ModelSerializer):
 	password = serializers.CharField(write_only=True)

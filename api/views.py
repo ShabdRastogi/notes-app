@@ -2,17 +2,18 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
 from main.models import Notes, EmailVerificationOTP, PasswordResetOTP
-from .serializers import NotesSerializer, RegisterSerializer, VerifyOTPSerializer, ResetPasswordSerializer
+from .serializers import NotesSerializer, RegisterSerializer, VerifyOTPSerializer, ResetPasswordSerializer, NotesPaginationSerializer
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.views import APIView 
-from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiResponse, OpenApiExample
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiResponse, OpenApiExample, OpenApiParameter
 import random
 from django.core.mail import send_mail
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.core.cache import cache
+from .pagination import NotesPagination
 
 class LoginSerializer(TokenObtainPairSerializer):
 	pass
@@ -38,25 +39,58 @@ class LoginApi(TokenObtainPairView):
   serializer_class = LoginSerializer
 
 @extend_schema(
-  summary='Get all notes',
-  description="Returns all notes belonging to the authenticated user.",
+  summary="Get all notes",
+  description="Returns paginated notes belonging to the authenticated user.",
+  parameters=[
+    OpenApiParameter(
+      name="page",
+      type=int,
+      location=OpenApiParameter.QUERY,
+      description="Page number.",
+      required=False,
+    ),
+    OpenApiParameter(
+      name="page_size",
+      type=int,
+      location=OpenApiParameter.QUERY,
+      description="Number of notes per page. Maximum 50.",
+      required=False,
+    ),
+  ],
   responses={
-    200: NotesSerializer(many=True),
-    401: OpenApiResponse(description='Authentication credentials were not provided or are invalid.')
-  }
+    200: NotesPaginationSerializer,
+    401: OpenApiResponse(
+      description="Authentication credentials were not provided or are invalid."
+    ),
+  },
 )
 class GetNotesApi(APIView):
   permission_classes = [IsAuthenticated]
 
   def get(self, request):
-    cache_key = f"notes:user:{request.user.id}"
+    page = request.query_params.get("page", "1")
+    page_size = request.query_params.get("page_size", "10")
+    cache_key = (
+      f"notes:user:{request.user.id}:"
+      f"page:{page}:"
+      f"page_size:{page_size}"
+    )
+
     cached_notes = cache.get(cache_key)
     if cached_notes is not None:
       return Response(cached_notes)
-    notes = Notes.objects.filter(user=request.user)
-    serializer = NotesSerializer(notes, many=True)
-    cache.set(cache_key, serializer.data, timeout=300)
-    return Response(serializer.data)
+
+    notes = Notes.objects.filter(user=request.user).order_by("note_number")
+
+    paginator = NotesPagination()
+    page = paginator.paginate_queryset(notes,request)
+
+    serializer = NotesSerializer(page,many=True)
+
+    response = paginator.get_paginated_response(serializer.data)
+    cache.set(cache_key,response.data,timeout=300)
+
+    return response
 
 
 @extend_schema(
@@ -91,7 +125,7 @@ class CreateNotesApi(APIView):
       else:
         note_number = 1
       serializer.save(user=request.user,note_number=note_number)
-      cache.delete(f"notes:user:{request.user.id}")
+      cache.delete_pattern(f"notes:user:{request.user.id}:*")
       return Response(serializer.data,status=status.HTTP_201_CREATED)
     return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
 
@@ -143,7 +177,7 @@ class UpdateNoteApi(APIView):
     serializer = NotesSerializer(note,data=request.data,partial=True)
     if serializer.is_valid():
       serializer.save()
-      cache.delete(f"notes:user:{request.user.id}")
+      cache.delete_pattern(f"notes:user:{request.user.id}:*")
       return Response(serializer.data)
     return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
 
@@ -161,7 +195,7 @@ class DeleteNoteApi(APIView):
   def delete(self, request, note_number):
     note = get_object_or_404(Notes,note_number=note_number,user=request.user)
     note.delete()
-    cache.delete(f"notes:user:{request.user.id}")
+    cache.delete_pattern(f"notes:user:{request.user.id}:*")
     return Response(status=status.HTTP_204_NO_CONTENT)
 
 
